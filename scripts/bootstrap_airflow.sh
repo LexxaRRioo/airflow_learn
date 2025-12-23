@@ -12,9 +12,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-# Helper: run airflow CLI in scheduler container (has airflow installed and DB access)
+# Helper: run airflow CLI in standalone container (has airflow installed and DB access)
 airflow_cli() {
-  sudo docker compose exec -T airflow-scheduler airflow "$@"
+  sudo docker compose exec -T airflow-standalone airflow "$@"
 }
 
 # Helper: ensure connection exists (create if missing)

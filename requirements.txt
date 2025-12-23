@@ -1,15 +1,14 @@
- # Дополнительные Python пакеты для Airflow
-# Эти пакеты можно установить через переменную _PIP_ADDITIONAL_REQUIREMENTS в .env
+# Дополнительные Python пакеты для Airflow
+# Версии провайдеров должны быть совместимы с Airflow 2.10.4
 
-# Провайдеры Airflow
-apache-airflow-providers-amazon>=8.0.0
-apache-airflow-providers-postgres>=5.0.0
-apache-airflow-providers-http>=4.0.0
-apache-airflow-providers-ftp>=3.0.0
+# Провайдеры Airflow (совместимые с Airflow 2.x)
+apache-airflow-providers-amazon==8.25.0
+apache-airflow-providers-postgres==5.11.2
+apache-airflow-providers-http==4.10.1
 
 # Обработка данных
-pandas>=2.0.0
-numpy>=1.24.0
+pandas>=2.0.0,<3.0.0
+numpy>=1.24.0,<2.0.0
 
 # HTTP клиенты
 requests>=2.31.0

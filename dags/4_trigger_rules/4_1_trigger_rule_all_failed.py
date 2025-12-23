@@ -17,6 +17,8 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
+from airflow.exceptions import AirflowFailException
+
 
 
 def _work(msg: str):
@@ -25,7 +27,7 @@ def _work(msg: str):
 
 def _fail(msg: str):
     print(msg)
-    raise Exception(msg)
+    raise AirflowFailException(msg)
 
 
 default_args = {

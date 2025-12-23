@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 
 @dag(
-    dag_id="3_1_start_date_schedule_cron",
+    dag_id="3_3_start_date_schedule_cron",
     description="Пример start_date с cron schedule (ежедневно в полночь)",
     schedule_interval="0 0 * * *",  # Эквивалент @daily
     start_date=datetime(2024, 1, 1),

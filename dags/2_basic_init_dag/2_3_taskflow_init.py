@@ -20,7 +20,7 @@ from airflow.decorators import dag, task
     },
 )
 def xcom_taskflow_dag():
-    @task
+    @task(task_id="push_task_1")
     def push_task_1():
         """Возвращает простое строковое значение, которое попадёт в XCom."""
         return 'Hello from Task 1'

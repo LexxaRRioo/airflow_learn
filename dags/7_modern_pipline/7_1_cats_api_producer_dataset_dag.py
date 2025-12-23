@@ -89,14 +89,12 @@ def fetch_cats(n: int = 10) -> Dict[str, Any]:
     }
 
 
-@task(task_id="save_raw_to_minio", dag=dag, outlets=[CATS_RAW_DATASET])
-def save_raw_to_minio(raw: Dict[str, Any]) -> Dict[str, str]:
-    """Пишет raw JSON в MinIO.
+@task(outlets=[CATS_RAW_DATASET])
+def save_raw_to_minio(raw: Dict[str, Any]):
+    """Сохраняет raw JSON в MinIO и публикует Dataset событие.
 
-    Важно: outlets публикует Dataset event. В Airflow UI событие будет видно,
-    а consumer DAG сможет стартовать по dataset-schedule.
-
-    Возвращаем bucket/key — это попадёт в XCom, и также будет доступно по DatasetEvent.extra.
+    Dataset используется как простой сигнал: "данные готовы в bucket/prefix".
+    Consumer DAG знает соглашение (bucket=cats, prefix=raw/) и сам найдёт нужный файл.
     """
 
     s3 = S3Hook(aws_conn_id=MINIO_CONN_ID)
@@ -109,9 +107,8 @@ def save_raw_to_minio(raw: Dict[str, Any]) -> Dict[str, str]:
     body = json.dumps(raw, ensure_ascii=False).encode("utf-8")
     s3.load_bytes(bytes_data=body, key=key, bucket_name=RAW_BUCKET, replace=True)
 
-    # Airflow 2.6+ умеет сохранять dataset event extra; но даже если extra не поддержан,
-    # consumer может вытащить key/bucket из XCom через DatasetEvent.
-    return {"bucket": RAW_BUCKET, "key": key}
+    print(f"✅ Сохранён файл: s3://{RAW_BUCKET}/{key}")
+    print(f"📢 Публикуется событие Dataset: {CATS_RAW_DATASET.uri}")
 
 
 raw = fetch_cats()

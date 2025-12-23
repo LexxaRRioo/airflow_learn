@@ -153,7 +153,9 @@ airflow backfill create --dag-id tutorial \
 * **Downstream** — все downstream-задачи (последующие задачи) в текущем DAG
 * **Recursive** — все задачи в дочерних и родительских DAG
 * **Failed** — только упавшие задачи в самом последнем запуске DAG
+
 ![](../../img/ui/re_run.png)
+
 Вы также можете очистить задачу через CLI, используя команду:
 
 ```bash

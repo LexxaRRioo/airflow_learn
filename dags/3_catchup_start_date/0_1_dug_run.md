@@ -77,6 +77,7 @@ dag = DAG(
     start_date=pendulum.datetime(2015, 12, 1, tz="UTC"),
     description="Простой учебный DAG",
     schedule="@daily",
+    catchup=True,
 )
 ```
 

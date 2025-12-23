@@ -1,76 +1,46 @@
 """
-DAG с TaskFlow API (Modern Approach)
-
-Сделан таким же по логике и структуре, как 2_legacy_init.py (start -> task_1/task_2 -> join -> task_3 -> bash_task -> end),
-но использует TaskFlow API (@dag/@task).
+Пример простого DAG для демонстрации работы `catchup=True`.
 """
-
 from __future__ import annotations
-
 from datetime import datetime, timedelta
-
 from airflow.decorators import dag, task
-from airflow.operators.bash import BashOperator
-from airflow.operators.empty import EmptyOperator
-
 
 @dag(
-    dag_id="3_1_taskflow_catchup",
-    description="Пример инициализации DAG с TaskFlow API (та же структура, что legacy)",
+    dag_id="3_1_catchup_example",
+    description="Простой DAG для демонстрации catchup=True",
     schedule_interval=timedelta(days=1),
     start_date=datetime(2025, 12, 10),
     catchup=True,
-    tags=["tutorial", "taskflow", "modern", "init"],
+    tags=["tutorial", "catchup"],
     default_args={
         "owner": "airflow",
         "retries": 1,
-        "retry_delay": timedelta(minutes=5),
+        "retry_delay": timedelta(minutes=1),
     },
 )
-def taskflow_dag():
-    start = EmptyOperator(task_id="start")
+def catchup_demonstration_dag():
+    @task
+    def print_execution_date_task_1(**kwargs):
+        """
+        Эта задача выводит в лог свою 'data_interval_start',
+        чтобы показать, за какой период времени она запущена.
+        """
+        execution_date = kwargs['data_interval_start']
+        print(f"Task 1: Запуск за дату (data_interval_start): {execution_date}")
+        return str(execution_date)
 
-    @task(task_id="task_1")
-    def task_1():
-        print("Executing Task 1 in TaskFlow DAG")
-        return "Task 1 completed"
+    @task
+    def print_execution_date_task_2(date_from_task_1: str, **kwargs):
+        """
+        Эта задача делает то же самое и подтверждает получение данных от первой.
+        """
+        execution_date = kwargs['data_interval_start']
+        print(f"Task 2: Запуск за дату (data_interval_start): {execution_date}")
+        print(f"Task 2: Получено от первой задачи: {date_from_task_1}")
 
-    @task(task_id="task_2")
-    def task_2():
-        print("Executing Task 2 in TaskFlow DAG")
-        return "Task 2 completed"
+    # Создаем зависимость между задачами
+    date_value = print_execution_date_task_1()
+    print_execution_date_task_2(date_value)
 
-    join = EmptyOperator(task_id="join")
-
-    @task(task_id="task_3")
-    def task_3(task1_result: str, task2_result: str, **context):
-        execution_date = context.get("execution_date")
-        ti = context.get("ti")
-
-        print(f"Execution date: {execution_date}")
-        print(f"Task instance: {ti}")
-        print(f"Task 1 result: {task1_result}")
-        print(f"Task 2 result: {task2_result}")
-
-        return "Task 3 completed"
-
-    bash_task = BashOperator(
-        task_id="bash_task",
-        bash_command='echo "TaskFlow DAG is running" && date',
-    )
-
-    end = EmptyOperator(task_id="end")
-
-    t1 = task_1()
-    t2 = task_2()
-    t3 = task_3(t1, t2)
-
-    start >> [t1, t2]
-    t1 >> join
-    t2 >> join
-    join >> t3
-    t3 >> bash_task
-    bash_task >> end
-
-
-dag_instance = taskflow_dag()
+# Инстанцируем DAG
+catchup_demonstration_dag()

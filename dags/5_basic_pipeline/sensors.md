@@ -11,8 +11,63 @@
 
 Так же, как и в случае с операторами, Airflow предоставляет большое количество готовых сенсоров — как встроенных в ядро Airflow, так и доступных через систему провайдеров.
 
-### См. также
+---
 
-**Отложенные операторы и триггеры (Deferrable Operators & Triggers)**
+## Что нужно сенсорам для работы
 
-[истоник](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/sensors.html)
+### 1) Worker/Executor
+Сенсор — это задача, она **выполняется воркером** (или самим scheduler’ом при LocalExecutor). Поэтому важно помнить:
+
+- в режиме **poke** сенсор держит executor slot всё время ожидания;
+- в режиме **reschedule** он отпускает слот и «возвращается» через интервал.
+
+Если у тебя мало слотов/воркеров, `poke` может легко «забить» очередь.
+
+### 2) Connections (очень важно)
+Многие сенсоры работают **через Airflow Connection**:
+
+- `HttpSensor` использует `http_conn_id` (типа `http`).
+- `FileSensor` использует `fs_conn_id` (типа `fs`).
+
+Практика:
+- в Connection хранится **base host/path**, а в DAG передаётся **только endpoint/relative filepath**.
+
+Типовая ошибка:
+- передать **полный URL** в `endpoint` и получить кривую склейку `host + full_url` → 404/invalid URL.
+
+---
+
+## Ключевые параметры сенсоров
+
+### Общие (почти у всех сенсоров)
+- `poke_interval`: как часто проверять условие (сек).
+- `timeout`: сколько максимум ждать до падения сенсора.
+- `mode`: `poke` или `reschedule`.
+- `soft_fail=True`: вместо FAILED → SKIPPED (полезно для необязательных ожиданий).
+
+### HttpSensor
+- `http_conn_id`: conn типа `http`.
+- `endpoint`: **только path**, например `/v1/images/search`.
+- `request_params`: query params (`{"limit": 1}` и т.п.).
+- `headers`: заголовки.
+- `response_check`: функция проверки ответа (например, `lambda r: r.status_code == 200`).
+
+### FileSensor
+Импорт (core):
+
+- `from airflow.sensors.filesystem import FileSensor`
+
+Параметры:
+- `fs_conn_id`: обычно `fs_default`.
+- `filepath`: путь **относительно base path** из fs-connection или абсолютный (зависит от conn.extra.path).
+
+---
+
+## Пара слов про UI: чем отличается poke vs reschedule
+
+- **poke**: задача видна как RUNNING почти постоянно (занимает слот).
+- **reschedule**: между проверками задача будет в состоянии `UP_FOR_RESCHEDULE` (слот освобождается), и в UI кажется «менее активной».
+
+---
+
+[источник](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/sensors.html)

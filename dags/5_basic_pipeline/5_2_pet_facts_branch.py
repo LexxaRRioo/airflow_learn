@@ -246,9 +246,6 @@ def load_cat_fact(payload: Dict[str, Any]) -> int:
     return int(inserted_id)
 
 
-join = EmptyOperator(task_id="join", trigger_rule="none_failed_min_one_success", dag=dag)
-
-
 payload_arg = choose_endpoint()
 
 load_dogs = load_dog_fact(payload_arg)
@@ -257,5 +254,4 @@ load_cats = load_cat_fact(payload_arg)
 branch_by_source.set_upstream(payload_arg)
 load_dogs.set_upstream(branch_by_source)
 load_cats.set_upstream(branch_by_source)
-join.set_upstream(load_dogs)
-join.set_upstream(load_cats)
+

@@ -168,35 +168,4 @@ Airflow периодически обнаруживает такие ситуа�
 
 ---
 
-### Воспроизведение heartbeat timeout локально
-
-Установите переменные окружения:
-
-```bash
-export AIRFLOW__SCHEDULER__TASK_INSTANCE_HEARTBEAT_SEC=600
-export AIRFLOW__SCHEDULER__TASK_INSTANCE_HEARTBEAT_TIMEOUT=2
-export AIRFLOW__SCHEDULER__TASK_INSTANCE_HEARTBEAT_TIMEOUT_DETECTION_INTERVAL=5
-```
-
-Создайте DAG с долгой задачей (например, 10 минут):
-
-```python
-from airflow.sdk import dag
-from airflow.providers.standard.operators.bash import BashOperator
-from datetime import datetime
-
-@dag(start_date=datetime(2021, 1, 1), schedule="@once", catchup=False)
-def sleep_dag():
-    t1 = BashOperator(
-        task_id="sleep_10_minutes",
-        bash_command="sleep 600",
-    )
-
-sleep_dag()
-```
-
-После запуска DAG задача будет помечена как failed через `<task_instance_heartbeat_timeout>` секунд.
-
----
-
 [Источник](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/tasks.html#)

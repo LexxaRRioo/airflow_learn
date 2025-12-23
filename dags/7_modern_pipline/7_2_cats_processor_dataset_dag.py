@@ -54,52 +54,25 @@ dag = DAG(
 
 
 def _extract_bucket_key_from_context(context) -> Tuple[str, str]:
-    """Пытаемся достать bucket/key из dataset-trigger.
-
-    Примечание:
-    В некоторых конфигурациях Airflow dataset_event.extra не заполняется, поэтому
-    triggering_dataset_events не содержит bucket/key. Тогда делаем fallback:
-    берём последний объект в MinIO по RAW_PREFIX.
-
-    Поддерживаем 3 варианта:
-    1) dag_run.conf.path_to_raw_data (ручной запуск)
-    2) triggering_dataset_events[-1].extra (если Airflow передаёт extra)
-    3) fallback: поиск последнего ключа в MinIO bucket/prefix
-    """
-
-    dag_run = context.get("dag_run")
-    conf = (dag_run.conf or {}) if dag_run else {}
-
-    ref = conf.get("path_to_raw_data")
-    if isinstance(ref, dict) and "bucket" in ref and "key" in ref:
-        return ref["bucket"], ref["key"]
-
+    """Извлекает bucket/key из triggering_dataset_events."""
     triggering_events = context.get("triggering_dataset_events")
-    if isinstance(triggering_events, list) and triggering_events:
-        event = triggering_events[-1]
-        extra = getattr(event, "extra", None)
-        if isinstance(extra, dict) and "bucket" in extra and "key" in extra:
-            return extra["bucket"], extra["key"]
-        if isinstance(extra, str):
-            try:
-                d = json.loads(extra.replace("'", '"'))
-                if "bucket" in d and "key" in d:
-                    return d["bucket"], d["key"]
-            except Exception:
-                pass
-
-    # Fallback: берём последний ключ из MinIO по RAW_PREFIX
-    s3 = S3Hook(aws_conn_id=MINIO_CONN_ID)
-    keys = s3.list_keys(bucket_name=RAW_BUCKET, prefix=RAW_PREFIX) or []
-    if not keys:
+    if not triggering_events:
         raise ValueError(
-            "Не удалось определить bucket/key из dataset-trigger и в MinIO нет объектов по prefix. "
-            "Запусти producer DAG заново или запусти этот DAG вручную с conf.path_to_raw_data={bucket,key}."
+            "DAG должен быть запущен через Dataset. "
+            "Не найдены triggering_dataset_events."
         )
 
-    # берём лексикографически последний (у нас timestamp в имени, поэтому подходит)
-    key = sorted(keys)[-1]
-    return RAW_BUCKET, key
+    # Берём последнее событие, которое вызвало запуск
+    latest_event = triggering_events[-1]
+    extra = getattr(latest_event, "extra", None)
+
+    if not isinstance(extra, dict) or "bucket" not in extra or "key" not in extra:
+        raise ValueError(
+            "Событие Dataset не содержит необходимой информации 'bucket' и 'key' в 'extra'. "
+            f"Получено: {extra}"
+        )
+
+    return extra["bucket"], extra["key"]
 
 
 @task(task_id="read_raw_from_minio", dag=dag)

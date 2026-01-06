@@ -14,10 +14,10 @@ x-airflow-common:
     AIRFLOW__CORE__TEST_CONNECTION: Enabled
     AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES: airflow.*
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+    AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: 'false'
     AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 5
     AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 5
     AIRFLOW__WEBSERVER__SECRET_KEY: secret
-    AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER: 'http://localhost:8793'
     # MinIO connection
     AWS_ACCESS_KEY_ID: minioadmin
     AWS_SECRET_ACCESS_KEY: minioadmin
@@ -47,7 +47,7 @@ services:
       - postgres-af-volume:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
-      interval: 10s
+      interval: 5s
       retries: 5
       start_period: 5s
     restart: always
@@ -64,7 +64,7 @@ services:
       - "5433:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 10s
+      interval: 5s
       retries: 5
       start_period: 5s
     restart: always
@@ -82,9 +82,9 @@ services:
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
 
   airflow-standalone:
@@ -94,10 +94,9 @@ services:
     command: standalone
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 5s
       retries: 5
-      start_period: 30s
+      start_period: 5s
     restart: always
     mem_reservation: "500M"
     mem_limit: "3G"
@@ -111,6 +110,7 @@ services:
       - bash
       - -c
       - |
+        echo "== Initializing Airflow =="
         airflow db init
         airflow db migrate
         airflow users create \
@@ -119,11 +119,70 @@ services:
           -l airflow \
           -r Admin \
           -u airflow \
-          -p airflow
+          -p airflow || true
         mkdir -p /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins
-        chown -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,plugins}
+        chown -R "$${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,plugins}
 
-        echo "Airflow version"
+        echo "== Setting up connections and variables =="
+
+        # MinIO S3 connection
+        airflow connections delete minio 2>/dev/null || true
+        airflow connections add minio \
+          --conn-type aws \
+          --conn-extra '{"aws_access_key_id":"minioadmin","aws_secret_access_key":"minioadmin","host":"http://minio:9000"}'
+
+        # FileSystem connection for FileSensor
+        airflow connections delete fs_default 2>/dev/null || true
+        airflow connections add fs_default \
+          --conn-type fs \
+          --conn-extra '{"path":"/"}'
+
+        # Airflow metadata DB
+        airflow connections delete postgres 2>/dev/null || true
+        airflow connections add postgres \
+          --conn-type postgres \
+          --conn-host postgres-airflow \
+          --conn-schema airflow \
+          --conn-login airflow \
+          --conn-password airflow \
+          --conn-port 5432
+
+        # Separate Postgres instance for lesson data
+        airflow connections delete postgres_data 2>/dev/null || true
+        airflow connections add postgres_data \
+          --conn-type postgres \
+          --conn-host postgres_data \
+          --conn-schema postgres \
+          --conn-login postgres \
+          --conn-password postgres \
+          --conn-port 5432
+
+        # HTTP connection for cat facts API
+        airflow connections delete http_default 2>/dev/null || true
+        airflow connections add http_default \
+          --conn-type http \
+          --conn-host https://catfact.ninja
+
+        # TheCatAPI HTTP connection
+        airflow connections delete thecatapi_default 2>/dev/null || true
+        airflow connections add thecatapi_default \
+          --conn-type http \
+          --conn-host api.thecatapi.com \
+          --conn-schema https \
+          --conn-extra '{}'
+
+        # Set Airflow variables (these are idempotent)
+        airflow variables set DATA_IMG_DIR "/opt/airflow/data/img"
+        airflow variables set MINIO_BUCKET_CATS "cats"
+        airflow variables set MINIO_RAW_PREFIX "raw"
+        airflow variables set MINIO_IMAGES_PREFIX "images"
+        airflow variables set MINIO_CONN_ID "minio"
+        airflow variables set POSTGRES_CONN_ID "postgres_data"
+        airflow variables set SALES_BUCKET "sales-reports"
+        airflow variables set SALES_RAW_PREFIX "raw_data"
+        airflow variables set SALES_REPORTS_PREFIX "reports"
+        airflow variables set THECATAPI_CONN_ID "thecatapi_default"
+        echo "== Initialization complete =="
         airflow version
     user: "0:0"
     volumes:

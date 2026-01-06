@@ -6,26 +6,36 @@
 
 1.  **Соберите и запустите Docker контейнеры:**
 
-    Выполните следующую команду в корневой директории проекта, чтобы запустить все сервисы (Airflow, Postgres, MinIO) в фоновом режиме.
+    Выполните следующую команду в корневой директории проекта, чтобы запустить (поднять) все сервисы в фоновом режиме. Запустятся Airflow, Postgres, MinIO.
 
     ```bash
-    docker compose up --build -d
+    docker compose up --build -d --wait
     ```
 
-2.  **Настройте Airflow:**
-
-    После запуска контейнеров выполните скрипт для добавления необходимых подключений (Connections) и переменных (Variables) в Airflow.
+    Если пишет, что какой-то порт уже занят, например `Bind for 0.0.0.0:8080 failed: port is already allocated`,
+    перейди в папку с другим проектом и выполни 
 
     ```bash
-    ./scripts/bootstrap_airflow.sh
+    docker compose down
     ```
 
-3.  **Доступ к веб-интерфейсу Airflow:**
+    Проверь через команду, что ничего лишнего не запущено, и пробуй "поднять контейнеры" ещё раз первой командой с `up`.
+
+    ```bash
+    docker ps
+    ```
+
+2.  **Доступ к веб-интерфейсу Airflow:**
 
     Откройте браузер и перейдите по адресу [http://localhost:8080](http://localhost:8080).
 
     *   **Логин:** `airflow`
     *   **Пароль:** `airflow`
+
+3. ** Доступ к другим сервисам (опционально)
+    * MinIO Console:  http://localhost:9001 (minioadmin/minioadmin)"
+    * MinIO API:      http://localhost:9000"
+    * PostgreSQL:     localhost:5432 (airflow/airflow)"
 
 ## Полезные ссылки на документацию
 

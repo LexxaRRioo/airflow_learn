@@ -2,6 +2,100 @@
 
 Этот проект содержит настроенную среду Apache Airflow для запуска ETL-пайплайнов.
 
+## Как учиться по этому репозиторию
+
+### Порядок изучения материалов
+
+Читайте markdown файлы в следующем порядке, параллельно изучая соответствующие Python файлы:
+
+**1. Архитектура Airflow** (`dags/1_architecture/`)
+- [scheduler.md](dags/1_architecture/scheduler.md) - Как работает планировщик
+- [ui.md](dags/1_architecture/ui.md) - Интерфейс пользователя
+- [var_conn.md](dags/1_architecture/var_conn.md) - Variables и Connections
+- [xcom.md](dags/1_architecture/xcom.md) - Обмен данными между задачами
+- **Executors** (`dags/1_architecture/executors/`)
+  - [0_architecture.md](dags/1_architecture/executors/0_architecture.md) - Общая архитектура
+  - [1_executors.md](dags/1_architecture/executors/1_executors.md) - Типы исполнителей
+  - [2_CeleryExecutor.md](dags/1_architecture/executors/2_CeleryExecutor.md) - Distributed executor
+  - [3_LocalExecutor.md](dags/1_architecture/executors/3_LocalExecutor.md) - Локальный executor
+  - [4_another_executor.md](dags/1_architecture/executors/4_another_executor.md) - Другие executors
+
+**2. Основы создания DAG** (`dags/2_basic_init_dag/`)
+- [0_1_init_dag.md](dags/2_basic_init_dag/0_1_init_dag.md) - Инициализация DAG
+- [0_2_task.md](dags/2_basic_init_dag/0_2_task.md) - Создание задач
+
+**3. Расписание и catchup** (`dags/3_catchup_start_date/`)
+- [0_1_dug_run.md](dags/3_catchup_start_date/0_1_dug_run.md) - DAG Runs
+- [0_2_cron_preset.md](dags/3_catchup_start_date/0_2_cron_preset.md) - Cron и preset расписания
+
+**4. Управление потоком выполнения** (`dags/4_trigger_rules/`)
+- [trigger_rules.md](dags/4_trigger_rules/trigger_rules.md) - Правила запуска задач
+
+**5. Базовые пайплайны** (`dags/5_basic_pipeline/`)
+- [sensors.md](dags/5_basic_pipeline/sensors.md) - Сенсоры для ожидания событий
+
+**6. Legacy подход к зависимостям** (`dags/6_legacy_pipline/`)
+- [dag_to_dag_dependency.md](dags/6_legacy_pipline/dag_to_dag_dependency.md) - Старый способ связи DAG-ов
+
+**7. Современный подход** (`dags/7_modern_pipline/`)
+- [README.md](dags/7_modern_pipline/README.md) - Обзор современного подхода
+- [dataset.md](dags/7_modern_pipline/dataset.md) - Datasets (рекомендуемый способ)
+- [asset.md](dags/7_modern_pipline/asset.md) - Assets
+
+### Как просматривать Markdown в VS Code
+
+**Способ 1: Горячие клавиши (рекомендуется)**
+1. Откройте любой `.md` файл
+2. Нажмите (на английской раскладке):
+   - **Mac:** `⌘ + K`, отпустите, затем нажмите `V`
+   - **Windows:** `Ctrl + K`, отпустите, затем нажмите `V`
+3. Файл откроется в split-view: слева код, справа preview
+
+```
+┌─────────────────────────────────────────────┐
+│  scheduler.md (code)  │  Preview (rendered) │
+│  # Scheduler          │  Scheduler          │
+│  Планировщик...       │  Планировщик...     │
+│                       │  [link] ← clickable │
+└─────────────────────────────────────────────┘
+```
+
+**Способ 2: Command Palette**
+1. `⌘ + Shift + P` (Mac) / `Ctrl + Shift + P` (Windows)
+2. Введите: `Markdown: Open Preview to the Side`
+3. Enter
+
+**Способ 3: Иконка в углу**
+- В правом верхнем углу редактора найдите иконку книги (Open Preview to the Side)
+
+**Навигация по ссылкам:**
+- **В preview:** просто кликните на ссылку
+- **В коде:** `⌘ + Click` (Mac) / `Ctrl + Click` (Windows)
+
+### Workflow обучения
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. docker compose up -d --wait                              │
+├─────────────────────────────────────────────────────────────┤
+│ 2. VS Code: Откройте папку проекта                          │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Параллельная работа с материалами:                       │
+│    ┌──────────────────────┬──────────────────────┐          │
+│    │ scheduler.md (⌘+K V) │ 1_scheduler_dag.py   │          │
+│    │ (preview mode)       │ (код примера)        │          │
+│    └──────────────────────┴──────────────────────┘          │
+├─────────────────────────────────────────────────────────────┤
+│ 4. Браузер: localhost:8080 (airflow/airflow)                │
+│    Смотрите как работают DAG-и в реальном времени           │
+├─────────────────────────────────────────────────────────────┤
+│ 5. Экспериментируйте: меняйте код → сохраняйте → смотрите   │
+│    как изменился DAG в UI (обновляется автоматически)       │
+└─────────────────────────────────────────────────────────────┘
+
+Порядок изучения: 1_architecture → 2_basic_init_dag → ... → 7_modern_pipline
+```
+
 ## Запуск проекта
 
 1.  **Соберите и запустите Docker контейнеры:**

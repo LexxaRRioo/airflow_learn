@@ -6,6 +6,8 @@
 
 ### Порядок изучения материалов
 
+Начните с просмотра видео: [https://youtu.be/Dx7WLsInkbE?si=t2we6gX2einMrh8Z](https://youtu.be/Dx7WLsInkbE?si=t2we6gX2einMrh8Z)
+
 Читайте markdown файлы в следующем порядке, параллельно изучая соответствующие Python файлы:
 
 **1. Архитектура Airflow** (`dags/1_architecture/`)
